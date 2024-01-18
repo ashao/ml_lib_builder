@@ -1,0 +1,5 @@
+build
+install
+*.tgz
+*.zip
+*.tar.gz

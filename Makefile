@@ -24,25 +24,19 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-PYTORCH_VERSION=2.0.1
-OSX_ARCHITECTURE=arm64
+ifeq ($(ARCH_FILE),)
+$(error Must specify ARCH_FILE)
+else
+include $(ARCH_FILE)
+endif
 
-TORCH_TARGET = libtorch-macos-$(OSX_ARCHITECTURE)-$(PYTORCH_VERSION).zip
+TORCH_TARGET = libtorch-OS-$(ARCHITECTURE)-$(PYTORCH_VERSION).zip
 TORCH_BUILD = $(PWD)/build/libtorch
 TORCH_INSTALL = $(PWD)/install/libtorch
-
-TORCH_CMAKE_OPTIONS =
-TORCH_CMAKE_OPTIONS += -DCMAKE_OSX_ARCHITECTURES=$(OSX_ARCHITECTURE)
-TORCH_CMAKE_OPTIONS += -DUSE_MKL=OFF -DUSE_MKLDNN=OFF -DUSE_ITT=OFF
-TORCH_CMAKE_OPTIONS += -DUSE_QNNPACK=OFF -DUSE_KINETO=OFF
 
 .PHONY: help
 help:
 	@grep "^# help\:" Makefile | grep -v grep | sed 's/\# help\: //' | sed 's/\# help\://'
-
-ifneq ($(shell uname), Darwin)
-	$(error This tool requires Mac OSX)
-endif
 
 # help:
 # help: ----Overview----
@@ -75,7 +69,7 @@ $(TORCH_BUILD) $(TORCH_INSTALL):
 	mkdir -p $@
 
 .PHONY: build_torch
-build_torch: $(TORCH_BUILD) $(TORCH_INSTALL) checkout_torch
+build_torch: $(TORCH_BUILD) $(TORCH_INSTALL) $(PYTORCH_ROCM_PREBUILD_TARGETS)
 	cd $< && \
 		cmake -DCMAKE_INSTALL_PREFIX=$(TORCH_INSTALL) $(TORCH_CMAKE_OPTIONS) ../../pytorch && \
 		make install -j 6

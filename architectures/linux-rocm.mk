@@ -37,7 +37,7 @@ PYTORCH_ROCM_PREBUILD_TARGETS = pytorch_amd_prebuild setup_triton
 # From PyTorch for ROCm instructions
 # https://github.com/pytorch/pytorch/blob/v2.3.1/README.md?plain=1#L241-L245
 pytorch_amd_prebuild:
-	cd pytorch; python tools/amd_build/build_amd.py
+	cd pytorch; python tools/amd_build/build_amd.py &> /dev/null
 
 AOTRITON_DIR = /lus/scratch/$(USER)/tmp/triton
 # Needed because PyTorch will automatically try to download into the $HOME/.triton

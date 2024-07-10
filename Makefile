@@ -71,8 +71,8 @@ $(TORCH_BUILD) $(TORCH_INSTALL):
 .PHONY: build_torch
 build_torch: $(TORCH_BUILD) $(TORCH_INSTALL) $(PYTORCH_ROCM_PREBUILD_TARGETS)
 	cd $< && \
-		cmake -DCMAKE_INSTALL_PREFIX=$(TORCH_INSTALL) $(TORCH_CMAKE_OPTIONS) ../../pytorch && \
-		make install -j 6
+		cmake -GNinja -DCMAKE_INSTALL_PREFIX=$(TORCH_INSTALL) $(TORCH_CMAKE_OPTIONS) ../../pytorch && \
+		ninja
 
 $(TORCH_TARGET): build_torch
 	cd install && zip -r ../$@ libtorch

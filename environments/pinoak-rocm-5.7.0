@@ -1,0 +1,4 @@
+module purge
+module load PrgEnv-gnu rocm/5.7.0 ninja libffi libsqlite3
+export CC=cc CXX=CC FC=ftn
+pyenv activate ml_lib_builder

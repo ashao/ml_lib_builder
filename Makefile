@@ -25,7 +25,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ifeq ($(ARCH_FILE),)
-$(error Must specify ARCH_FILE)
+$(warning Must specify ARCH_FILE)
 else
 include $(ARCH_FILE)
 endif
@@ -80,4 +80,6 @@ $(TORCH_TARGET): build_torch
 .PHONY: clean_torch
 clean_torch:
 	rm -rf $(TORCH_BUILD) $(TORCH_TARGET) $(TORCH_INSTALL)
+	cd pytorch && git clean -fdx && git restore .
+	cd pytorch/third_party/kineto && git restore .
 

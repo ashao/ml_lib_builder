@@ -30,7 +30,7 @@ else
 include $(ARCH_FILE)
 endif
 
-TORCH_TARGET = libtorch-OS-$(ARCHITECTURE)-$(PYTORCH_VERSION).zip
+TORCH_TARGET = libtorch-$(OS)-$(ARCHITECTURE)-$(PYTORCH_VERSION).zip
 TORCH_BUILD = $(PWD)/build/libtorch
 TORCH_INSTALL = $(PWD)/install/libtorch
 

@@ -1,4 +1,14 @@
 module purge
-module load PrgEnv-gnu rocm/5.7.0 ninja libffi libsqlite3
-export CC=cc CXX=CC FC=ftn
+module load PrgEnv-gnu rocm/5.6.1 ninja libffi libsqlite3
+export CC=gcc CXX=g++ FC=gfortran
+
+# Following come from hipconfig, not all variables set by ROCm module
+export ROCM_PATH=$(hipconfig --rocmpath)
+export ROCM_SOURCE_PATH=$ROCM_PATH
+export HIP_PATH=$(hipconfig --path)
+export HIP_LIB_PATH=$ROCM_PATH/lib
+
+# Build for all ROCm architectures
+export PYTORCH_ROCM_ARCH="gfx900;gfx906;gfx908;gfx90a;gfx1030"
+
 pyenv activate ml_lib_builder

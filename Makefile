@@ -60,7 +60,7 @@ help:
 # help: ----Meta targets----
 # help: clean						-- Cleans all build and install directories
 .PHONY: clean
-clean: clean_torch
+clean: clean_torch clean_tensorflow clean_onnxruntime
 
 # help: ----Build Targets----
 
@@ -89,16 +89,20 @@ clean_torch:
 clean_tensorflow:
 	rm -rf $(TF_INSTALL_DIR)
 	cd tensorflow && \
-		bazel clean --expunge
+		bazel clean --expunge_async && \
 		git restore .
 
 .PHONY: clean_onnxruntime
-clean_tensorflow:
+clean_onnxruntime:
 	rm -rf $(ONNXRT_INSTALL_DIR) $(ONNXRT_BUILD_DIR)
+	cd onnxruntime && \
+		git reset --hard && \
+		git clean -fdx && \
+		git restore .
 
 ## Tensorflow section
 $(TF_INSTALL_DIR):
-	mkdir -p $
+	mkdir -p $@
 
 $(TF_ARCHIVE): $(TF_PREBUILD_TARGETS) $(TF_INSTALL_DIR)
 	cd tensorflow && \

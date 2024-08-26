@@ -27,32 +27,29 @@
 
 OS = linux
 ARCHITECTURE = x64
-ROCM_VERSION = 5.7.0
-STACK=rocm-$(ROCM_VERSION)
+CUDA_VERSION = 11.8.0
+STACK=cuda-$(CUDA_VERSION)
 
 # pyTorch options
-PYTORCH_VERSION = 2.2.2
+PYTORCH_VERSION = 2.4.0
 TORCH_CMAKE_OPTIONS = -DBUILD_PYTHON=OFF
-TORCH_CMAKE_OPTIONS += -DUSE_ROCM=ON -DUSE_RCCL=ON -DROCM_SOURCE_DIR=${ROCM_PATH}
-TORCH_CMAKE_OPTIONS += -DUSE_NCCL=OFF -DUSE_CUDA=OFF -DUSE_STATIC_MKL=ON
-PYTORCH_PREBUILD_TARGETS = pytorch_rocm_checkout pytorch_rocm_prebuild
+TORCH_CMAKE_OPTIONS += -DUSE_NCCL=ON -DUSE_CUDA=ON -DUSE_STATIC_MKL=ON -DUSE_ROCM=OFF -DUSE_CUDNN=ON
+TORCH_CMAKE_OPTIONS += -DTORCH_CUDA_ARCH_LIST="All" -DCUDNN_LIBRARY_PATH=${CUDNN_LIBRARY} -DCUDNN_INCLUDE_PATH=${CUDNN_INCLUDE_DIR}
+PYTORCH_PREBUILD_TARGETS = pytorch_checkout
 
 # Tensorflow options
-TF_VERSION = 2.16
-TF_TAG = r$(TF_VERSION)-rocm-enhanced
-TF_REMOTE = https://github.com/ROCm/tensorflow-upstream.git
-TF_PREBUILD_TARGETS = tf_rocm_checkout tf_rocm_prebuild
-TF_OPTIONS = --config=opt
+TF_VERSION = 2.14.1
+TF_TAG = v$(TF_VERSION)
+TF_REMOTE = https://github.com/tensorflow/tensorflow.git
+TF_PREBUILD_TARGETS = tf_checkout tf_prebuild
+TF_BAZEL_OPTS = --jobs 192
+
 
 ONNXRT_VERSION = 1.17.3
-ONNXRT_OPTIONS = --use_rocm --rocm_home $(ROCM_PATH)
+ONNXRT_OPTIONS = --use_cuda --cudnn_home=${CUDNN_INSTALL_PATH}
 ONNXRT_PREBUILD_TARGETS = onnxrt_checkout
-# No prebuild steps for ONNX
 
-# From PyTorch for ROCm instructions
-# https://github.com/pytorch/pytorch/blob/v2.3.1/README.md?plain=1#L241-L245
-# For at ROCm 5.5.0 and later, also need to patch one of the ATen files
-pytorch_rocm_checkout:
+pytorch_checkout:
 	cd pytorch && \
 		git checkout v${PYTORCH_VERSION} && \
 		git submodule update --init --recursive
@@ -62,31 +59,27 @@ pytorch_rocm_prebuild:
 	sed -i 's/attr.memoryType/attr.type/g' pytorch/aten/src/ATen/hip/detail/HIPHooks.cpp
 	cd pytorch; git apply ../patches/pytorch/caffe2_rocm_path.patch
 
-# (1) Patch .bazelrc to avoid hard-coded paths to Clang
-# (2) Run the bazel configure script
-tf_rocm_prebuild:
-	cd tensorflow; \
-		git checkout $(TF_TAG) && \
-		git restore .bazelrc && \
-		git apply ../patches/tensorflow/bazelrc.rocm.patch
+tf_prebuild:
 	cd tensorflow; \
 		USE_DEFAULT_PYTHON_LIB_PATH=1 \
 		PYTHON_BIN_PATH=$$(which python) \
 		TF_NEED_CLANG=1 \
-		TF_NEED_ROCM=1 \
-		TF_NEED_CUDA=0 \
+		TF_NEED_ROCM=0 \
+		TF_NEED_CUDA=1 \
+		TF_NEED_TENSORRT=0 \
+		TF_CUDA_CLANG=0 \
 		CC_OPT_FLAGS="-Wno-sign-compare" \
 		TF_SET_ANDROID_WORKSPACE=0 \
 		python configure.py
 
-tf_rocm_checkout:
+tf_checkout:
 	cd tensorflow; \
 		git fetch $(TF_REMOTE) $(TF_TAG) && \
 		git checkout FETCH_HEAD
 
 onnxrt_checkout:
 	cd onnxruntime && \
-		git checkout v$(ONNXRT_VERSION) &&
-		git reset --hard &&
-		git clean -xdf &&
+		git checkout v$(ONNXRT_VERSION) && \
+		git reset --hard && \
+		git clean -xdf && \
 		git submodule update --init --recursive

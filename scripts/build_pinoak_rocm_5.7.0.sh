@@ -7,15 +7,13 @@
 #SBATCH --partition antero
 
 # Compile each of the ML Libraries
-SCRIPT_NAME=$(realpath $0)
-SCRIPT_PATH=$(dirname $SCRIPT_NAME)
-ML_BUILDER_REPO_PATH=$(dirname $SCRIPT_PATH)
+ARCH_FILE=architectures/linux-rocm-5.7.0.mk
 
 source environments/pytorch/pinoak-rocm-5.7.0
-srun -n 1 -c 192 make build_torch
+srun -n 1 -c 192 make build_torch ARCH_FILE=$ARCH_FILE
 
 source environments/tensorflow/pinoak-rocm-5.7.0
-srun -n 1 -c 192 make build_tensorflow
+srun -n 1 -c 192 make build_tensorflow ARCH_FILE=$ARCH_FILE
 
 source environments/onnxruntime/pinoak-rocm-5.7.0
-srun -n 1 -c 192 make build_onnxruntime
+srun -n 1 -c 192 make build_onnxruntime ARCH_FILE=$ARCH_FILE

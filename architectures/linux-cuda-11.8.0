@@ -47,7 +47,7 @@ TF_BAZEL_OPTS = --jobs 192
 
 ONNXRT_VERSION = 1.17.3
 ONNXRT_OPTIONS = --use_cuda --cudnn_home=${CUDNN_INSTALL_PATH}
-ONNXRT_PREBUILD_TARGETS = onnxrt_checkout
+ONNXRT_PREBUILD_TARGETS = onnxrt_checkout onnxrt_patch
 
 pytorch_checkout:
 	cd pytorch && \
@@ -83,3 +83,7 @@ onnxrt_checkout:
 		git reset --hard && \
 		git clean -xdf && \
 		git submodule update --init --recursive
+
+onnxrt_patch:
+	cd onnxruntime && \
+		git apply ../patches/onnxruntime/cfloat.patch

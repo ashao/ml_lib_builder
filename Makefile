@@ -129,8 +129,9 @@ compile_onnxruntime: $(ONNXRT_PREBUILD_TARGETS)
 		--build_shared_lib \
 		$(ONNXRT_OPTIONS)
 
-$(ONNXRT_ARCHIVE): compile_onnxruntime
+$(ONNXRT_ARCHIVE): # compile_onnxruntime
 	cd $(ONNXRT_BUILD_DIR)/Release && make install
+	cd $(ONNXRT_INSTALL_DIR) && mv include/onnxruntime/* include && rm -rf include/onnxruntime && mv lib64 lib
 	cd $(INSTALL_DIR) && tar -czf $@ onnxruntime/
 
 # help: build_onnxruntime			-- Builds ONNX Runtime

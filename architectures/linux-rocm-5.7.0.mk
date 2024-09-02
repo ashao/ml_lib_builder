@@ -37,6 +37,7 @@ TORCH_CMAKE_OPTIONS += -DUSE_ROCM=ON -DUSE_RCCL=ON -DROCM_SOURCE_DIR=${ROCM_PATH
 TORCH_CMAKE_OPTIONS += -DUSE_NCCL=OFF -DUSE_CUDA=OFF -DUSE_STATIC_MKL=ON
 PYTORCH_PREBUILD_TARGETS = pytorch_rocm_checkout pytorch_rocm_prebuild
 
+
 # Tensorflow options
 TF_VERSION = 2.16
 TF_TAG = r$(TF_VERSION)-rocm-enhanced
@@ -60,7 +61,9 @@ pytorch_rocm_checkout:
 pytorch_rocm_prebuild:
 	cd pytorch; python tools/amd_build/build_amd.py
 	sed -i 's/attr.memoryType/attr.type/g' pytorch/aten/src/ATen/hip/detail/HIPHooks.cpp
+	sed -i 's,/opt/rocm,${ROCM_PATH},g' pytorch/third_party/kineto/libkineto/CMakeLists.txt
 	cd pytorch; git apply ../patches/pytorch/caffe2_rocm_path.patch
+	cd pytorch; git apply ../patches/pytorch/hip_regex.patch
 
 # (1) Patch .bazelrc to avoid hard-coded paths to Clang
 # (2) Run the bazel configure script

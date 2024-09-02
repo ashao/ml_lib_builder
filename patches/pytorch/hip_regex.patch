@@ -1,0 +1,13 @@
+diff --git a/cmake/public/LoadHIP.cmake b/cmake/public/LoadHIP.cmake
+index 6989f57f70..570d69d3df 100644
+--- a/cmake/public/LoadHIP.cmake
++++ b/cmake/public/LoadHIP.cmake
+@@ -92,7 +92,7 @@ if(HIP_FOUND)
+     message("\n***** ROCm version from rocm_version.h ****\n")
+   endif()
+ 
+-  string(REGEX MATCH "^([0-9]+)\.([0-9]+)\.([0-9]+).*$" ROCM_VERSION_DEV_MATCH ${ROCM_VERSION_DEV_RAW})
++  string(REGEX MATCH "^([0-9]+)\\.([0-9]+)\\.([0-9]+).*$" ROCM_VERSION_DEV_MATCH ${ROCM_VERSION_DEV_RAW})
+ 
+   if(ROCM_VERSION_DEV_MATCH)
+     set(ROCM_VERSION_DEV_MAJOR ${CMAKE_MATCH_1})

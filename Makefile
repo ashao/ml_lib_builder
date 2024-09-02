@@ -24,6 +24,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+
 ifeq ($(ARCH_FILE),)
 $(error Must specify ARCH_FILE)
 else
@@ -68,11 +69,7 @@ clean: clean_torch clean_tensorflow clean_onnxruntime
 $(TORCH_BUILD_DIR):
 	mkdir -p $@
 
-$(TORCH_ARCHIVE): $(TORCH_BUILD_DIR) $(PYTORCH_PREBUILD_TARGETS)
-	cd $< && \
-		cmake -GNinja -DCMAKE_INSTALL_PREFIX=$(TORCH_INSTALL_DIR) -DPYTHON_EXECUTABLE=$$(which python) \
-		 	$(TORCH_CMAKE_OPTIONS) ../../pytorch && \
-		ninja install
+$(TORCH_ARCHIVE): $(TORCH_ARCHIVE_MODS) compile_torch
 	cd $(INSTALL_DIR) && tar -czf $@ libtorch/
 
 # help: build_torch					-- Builds libtorch
@@ -84,6 +81,13 @@ clean_torch:
 	rm -rf $(TORCH_BUILD_DIR) $(TORCH_ARCHIVE) $(TORCH_INSTALL_DIR)
 	cd pytorch && git clean -fdx && git restore .
 	cd pytorch/third_party/kineto && git restore .
+
+.PHONY: compile_torch
+compile_torch: $(TORCH_BUILD_DIR) $(PYTORCH_PREBUILD_TARGETS)
+	cd $(TORCH_BUILD_DIR) && \
+		cmake -GNinja -DCMAKE_INSTALL_PREFIX=$(TORCH_INSTALL_DIR) -DPYTHON_EXECUTABLE=$$(which python) \
+		 	$(TORCH_CMAKE_OPTIONS) ../../pytorch && \
+		ninja install
 
 .PHONY: clean_tensorflow
 clean_tensorflow:
@@ -129,7 +133,7 @@ compile_onnxruntime: $(ONNXRT_PREBUILD_TARGETS)
 		--build_shared_lib \
 		$(ONNXRT_OPTIONS)
 
-$(ONNXRT_ARCHIVE): # compile_onnxruntime
+$(ONNXRT_ARCHIVE): compile_onnxruntime
 	cd $(ONNXRT_BUILD_DIR)/Release && make install
 	cd $(ONNXRT_INSTALL_DIR) && mv include/onnxruntime/* include && rm -rf include/onnxruntime && mv lib64 lib
 	cd $(INSTALL_DIR) && tar -czf $@ onnxruntime/

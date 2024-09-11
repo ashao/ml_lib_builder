@@ -62,8 +62,7 @@ pytorch_rocm_prebuild:
 	cd pytorch; python tools/amd_build/build_amd.py
 	sed -i 's/attr.memoryType/attr.type/g' pytorch/aten/src/ATen/hip/detail/HIPHooks.cpp
 	sed -i 's,/opt/rocm,${ROCM_PATH},g' pytorch/third_party/kineto/libkineto/CMakeLists.txt
-	cd pytorch; git apply ../patches/pytorch/caffe2_rocm_path.patch
-	cd pytorch; git apply ../patches/pytorch/hip_regex.patch
+	sed -i 's,\.,\\.,g' pytorch/cmake/public/LoadHIP.cmake
 
 # (1) Patch .bazelrc to avoid hard-coded paths to Clang
 # (2) Run the bazel configure script

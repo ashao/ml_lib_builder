@@ -1,0 +1,12 @@
+diff --git a/onnxruntime/contrib_ops/cuda/moe/ft_moe/moe_kernel.cu b/onnxruntime/contrib_ops/cuda/moe/ft_moe/moe_kernel.cu
+index f4f2b49032..23422766ef 100644
+--- a/onnxruntime/contrib_ops/cuda/moe/ft_moe/moe_kernel.cu
++++ b/onnxruntime/contrib_ops/cuda/moe/ft_moe/moe_kernel.cu
+@@ -16,6 +16,7 @@
+ // Copyright (c) Microsoft Corporation. All rights reserved.
+ // Licensed under the MIT License.
+ 
++#include <cfloat>
+ #include <cuda.h>
+ #include <cuda_fp16.h>
+ #include <math.h>

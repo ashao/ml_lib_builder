@@ -1,0 +1,26 @@
+diff --git a/tools/ci_build/build.py b/tools/ci_build/build.py
+index 85583e11f5..6370151ac5 100644
+--- a/tools/ci_build/build.py
++++ b/tools/ci_build/build.py
+@@ -152,6 +152,12 @@ def parse_arguments():
+     )
+     # Main arguments
+     parser.add_argument("--build_dir", required=True, help="Path to the build directory.")
++    parser.add_argument(
++        "--install_dir",
++        required=False,
++        default = "",
++        help="Path to install ORT"
++    )
+     parser.add_argument(
+         "--config",
+         nargs="+",
+@@ -1591,6 +1597,8 @@ def generate_build_tree(
+             )
+         preinstalled_dir = Path(build_dir) / config
+         temp_cmake_args = cmake_args.copy()
++        if args.install_dir:
++            temp_cmake_args += ["-DCMAKE_INSTALL_PREFIX=" + args.install_dir]
+         if cflags is not None and cxxflags is not None:
+             temp_cmake_args += [
+                 "-DCMAKE_C_FLAGS=%s" % (" ".join(cflags)),

@@ -1,0 +1,7 @@
+module purge
+
+export CUDA_VERSION=12.5.0
+
+module load PrgEnv-gnu cudatoolkit/$CUDA_VERSION cudnn/cuda-12/9.3.0.75 libffi libsqlite3 cmake cray-python gcc/11.2.0
+
+

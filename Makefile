@@ -24,25 +24,31 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-PYTORCH_VERSION=2.0.1
-OSX_ARCHITECTURE=arm64
 
-TORCH_TARGET = libtorch-macos-$(OSX_ARCHITECTURE)-$(PYTORCH_VERSION).zip
-TORCH_BUILD = $(PWD)/build/libtorch
-TORCH_INSTALL = $(PWD)/install/libtorch
+ifeq ($(ARCH_FILE),)
+$(error Must specify ARCH_FILE)
+else
+include $(ARCH_FILE)
+endif
 
-TORCH_CMAKE_OPTIONS =
-TORCH_CMAKE_OPTIONS += -DCMAKE_OSX_ARCHITECTURES=$(OSX_ARCHITECTURE)
-TORCH_CMAKE_OPTIONS += -DUSE_MKL=OFF -DUSE_MKLDNN=OFF -DUSE_ITT=OFF
-TORCH_CMAKE_OPTIONS += -DUSE_QNNPACK=OFF -DUSE_KINETO=OFF
+INSTALL_DIR = $(PWD)/install
+BUILD_DIR = $(PWD)/build
+
+TORCH_ARCHIVE = $(INSTALL_DIR)/libtorch-$(PYTORCH_VERSION)-$(OS)-$(ARCHITECTURE)-$(STACK).tgz
+TORCH_BUILD_DIR = $(BUILD_DIR)/libtorch
+TORCH_INSTALL_DIR = $(INSTALL_DIR)/libtorch
+
+TF_ARCHIVE = $(INSTALL_DIR)/libtensorflow-$(TF_VERSION)-$(OS)-$(ARCHITECTURE)-$(STACK).tgz
+TF_INSTALL_DIR = $(INSTALL_DIR)/libtensorflow
+# Note: TF uses its own build system; cannot specify a build directory
+
+ONNXRT_ARCHIVE = $(INSTALL_DIR)/onnxruntime-$(ONNXRT_VERSION)-$(OS)-$(ARCHITECTURE)-$(STACK).tgz
+ONNXRT_BUILD_DIR = $(BUILD_DIR)/onnxruntime
+ONNXRT_INSTALL_DIR = $(INSTALL_DIR)/onnxruntime
 
 .PHONY: help
 help:
 	@grep "^# help\:" Makefile | grep -v grep | sed 's/\# help\: //' | sed 's/\# help\://'
-
-ifneq ($(shell uname), Darwin)
-	$(error This tool requires Mac OSX)
-endif
 
 # help:
 # help: ----Overview----
@@ -55,35 +61,83 @@ endif
 # help: ----Meta targets----
 # help: clean						-- Cleans all build and install directories
 .PHONY: clean
-clean: clean_torch
+clean: clean_torch clean_tensorflow clean_onnxruntime
 
-# help:
 # help: ----Build Targets----
-# help: torch						-- Builds libtorch
-# help:
-.PHONY: torch
-torch: $(TORCH_TARGET)
 
-# Checkout a specific version of Torch and update all of the torch submodules
-.PHONY: checkout_torch
-checkout_torch:
-	cd pytorch && git checkout v$(PYTORCH_VERSION) && \
-		git submodule foreach --recursive git reset --hard && \
-		git submodule update --init --recursive
-
-$(TORCH_BUILD) $(TORCH_INSTALL):
+## Torch section
+$(TORCH_BUILD_DIR):
 	mkdir -p $@
 
-.PHONY: build_torch
-build_torch: $(TORCH_BUILD) $(TORCH_INSTALL) checkout_torch
-	cd $< && \
-		cmake -DCMAKE_INSTALL_PREFIX=$(TORCH_INSTALL) $(TORCH_CMAKE_OPTIONS) ../../pytorch && \
-		make install -j 6
+$(TORCH_ARCHIVE): $(TORCH_ARCHIVE_MODS) compile_torch
+	cd $(INSTALL_DIR) && tar -czf $@ libtorch/
 
-$(TORCH_TARGET): build_torch
-	cd install && zip -r ../$@ libtorch
+# help: build_torch					-- Builds libtorch
+.PHONY: build_torch
+build_torch: $(TORCH_ARCHIVE)
 
 .PHONY: clean_torch
 clean_torch:
-	rm -rf $(TORCH_BUILD) $(TORCH_TARGET) $(TORCH_INSTALL)
+	rm -rf $(TORCH_BUILD_DIR) $(TORCH_ARCHIVE) $(TORCH_INSTALL_DIR)
+	cd pytorch && git clean -fdx && git restore .
+	cd pytorch/third_party/kineto && git restore .
 
+.PHONY: compile_torch
+compile_torch: $(TORCH_BUILD_DIR) $(PYTORCH_PREBUILD_TARGETS)
+	cd $(TORCH_BUILD_DIR) && \
+		cmake -GNinja -DCMAKE_INSTALL_PREFIX=$(TORCH_INSTALL_DIR) -DPYTHON_EXECUTABLE=$$(which python) \
+		 	$(TORCH_CMAKE_OPTIONS) ../../pytorch && \
+		ninja install
+
+.PHONY: clean_tensorflow
+clean_tensorflow:
+	rm -rf $(TF_INSTALL_DIR)
+	cd tensorflow && \
+		bazel clean --expunge_async && \
+		git restore .
+
+.PHONY: clean_onnxruntime
+clean_onnxruntime:
+	rm -rf $(ONNXRT_INSTALL_DIR) $(ONNXRT_BUILD_DIR)
+	cd onnxruntime && \
+		git reset --hard && \
+		git clean -fdx && \
+		git restore .
+
+## Tensorflow section
+$(TF_INSTALL_DIR):
+	mkdir -p $@
+
+$(TF_ARCHIVE): $(TF_PREBUILD_TARGETS) $(TF_INSTALL_DIR)
+	cd tensorflow && \
+		bazel build $(TF_BAZEL_OPTS) //tensorflow/tools/lib_package:libtensorflow
+	cp tensorflow/bazel-bin/tensorflow/tools/lib_package/libtensorflow.tar.gz $(TF_INSTALL_DIR)
+	cd $(TF_INSTALL_DIR) && tar -xzf libtensorflow.tar.gz && rm -f libtensorflow.tar.gz
+	cd $(INSTALL_DIR) && tar -czf $@ libtensorflow
+
+# help: build_tensorflow			-- Builds Tensorflow
+.PHONY: build_tensorflow
+build_tensorflow: $(TF_ARCHIVE)
+
+## ONNX Runtime
+compile_onnxruntime: $(ONNXRT_PREBUILD_TARGETS)
+	cd onnxruntime && \
+		git apply ../patches/onnxruntime/build.install.patch
+	cd onnxruntime && python tools/ci_build/build.py \
+		--config Release \
+		--build_dir=$(ONNXRT_BUILD_DIR) \
+		--compile_no_warning_as_error \
+		--parallel \
+		--skip_tests \
+		--install_dir=$(ONNXRT_INSTALL_DIR) \
+		--build_shared_lib \
+		$(ONNXRT_OPTIONS)
+
+$(ONNXRT_ARCHIVE): compile_onnxruntime
+	cd $(ONNXRT_BUILD_DIR)/Release && make install
+	cd $(ONNXRT_INSTALL_DIR) && mv include/onnxruntime/* include && rm -rf include/onnxruntime && mv lib64 lib
+	cd $(INSTALL_DIR) && tar -czf $@ onnxruntime/
+
+# help: build_onnxruntime			-- Builds ONNX Runtime
+.PHONY: build_onnxruntime
+build_onnxruntime: $(ONNXRT_ARCHIVE)

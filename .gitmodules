@@ -1,3 +1,11 @@
 [submodule "pytorch"]
 	path = pytorch
 	url = https://github.com/pytorch/pytorch.git
+	shallow = true
+[submodule "tensorflow"]
+	path = tensorflow
+	url = https://github.com/tensorflow/tensorflow.git
+	shallow = true
+[submodule "onnxruntime"]
+	path = onnxruntime
+	url = https://github.com/microsoft/onnxruntime.git

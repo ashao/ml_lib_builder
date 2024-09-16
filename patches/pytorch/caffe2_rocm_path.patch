@@ -1,0 +1,21 @@
+diff --git a/caffe2/CMakeLists.txt b/caffe2/CMakeLists.txt
+index 748363725..989a9ed44 100644
+--- a/caffe2/CMakeLists.txt
++++ b/caffe2/CMakeLists.txt
+@@ -1295,11 +1295,12 @@ if(USE_ROCM)
+     USE_ROCM
+     __HIP_PLATFORM_AMD__
+     )
++  set(ROCM_PATH $ENV{ROCM_PATH})
+   target_include_directories(torch_hip PRIVATE
+-    /opt/rocm/include
+-    /opt/rocm/hcc/include
+-    /opt/rocm/rocblas/include
+-    /opt/rocm/hipsparse/include
++    ${ROCM_PATH}/include
++    ${ROCM_PATH}/hcc/include
++    ${ROCM_PATH}/rocblas/include
++    ${ROCM_PATH}/hipsparse/include
+     )
+ endif()
+ 

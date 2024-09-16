@@ -3,3 +3,4 @@ install
 *.tgz
 *.zip
 *.tar.gz
+slurm*.out

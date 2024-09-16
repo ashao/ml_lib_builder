@@ -1,0 +1,89 @@
+
+# BSD 2-Clause License
+#
+# Copyright (c) 2024, Hewlett Packard Enterprise
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+OS = linux
+ARCHITECTURE = x64
+CUDA_VERSION = 12.5.0
+STACK=cuda-$(CUDA_VERSION)
+
+# pyTorch options
+PYTORCH_VERSION = 2.4.0
+TORCH_CMAKE_OPTIONS = -DBUILD_PYTHON=OFF
+TORCH_CMAKE_OPTIONS += -DUSE_NCCL=ON -DUSE_CUDA=ON -DUSE_STATIC_MKL=ON -DUSE_ROCM=OFF -DUSE_CUDNN=ON
+TORCH_CMAKE_OPTIONS += -DTORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} -DCUDNN_LIBRARY_PATH=${CUDNN_LIBRARY} -DCUDNN_INCLUDE_PATH=${CUDNN_INCLUDE_DIR}
+PYTORCH_PREBUILD_TARGETS = pytorch_checkout
+
+# Tensorflow options
+TF_VERSION = 2.17.0
+TF_TAG = v$(TF_VERSION)
+TF_REMOTE = https://github.com/tensorflow/tensorflow.git
+TF_PREBUILD_TARGETS = tf_checkout tf_prebuild
+TF_BAZEL_OPTS = --jobs 192
+
+
+ONNXRT_VERSION = 1.17.3
+ONNXRT_OPTIONS = --use_cuda --cudnn_home=${CUDNN_INSTALL_PATH}
+ONNXRT_PREBUILD_TARGETS = onnxrt_checkout onnxrt_patch
+
+pytorch_checkout:
+	cd pytorch && \
+		git checkout v${PYTORCH_VERSION} && \
+		git submodule update --init --recursive
+
+pytorch_rocm_prebuild:
+	cd pytorch; python tools/amd_build/build_amd.py
+	sed -i 's/attr.memoryType/attr.type/g' pytorch/aten/src/ATen/hip/detail/HIPHooks.cpp
+	cd pytorch; git apply ../patches/pytorch/caffe2_rocm_path.patch
+
+tf_prebuild:
+	cd tensorflow; \
+		USE_DEFAULT_PYTHON_LIB_PATH=1 \
+		PYTHON_BIN_PATH=$$(which python) \
+		TF_NEED_CLANG=1 \
+		TF_NEED_ROCM=0 \
+		TF_NEED_CUDA=1 \
+		TF_NEED_TENSORRT=0 \
+		TF_CUDA_CLANG=0 \
+		CC_OPT_FLAGS="-Wno-sign-compare" \
+		TF_SET_ANDROID_WORKSPACE=0 \
+		python configure.py
+
+tf_checkout:
+	cd tensorflow; \
+		git fetch $(TF_REMOTE) $(TF_TAG) && \
+		git checkout FETCH_HEAD
+
+onnxrt_checkout:
+	cd onnxruntime && \
+		git checkout v$(ONNXRT_VERSION) && \
+		git reset --hard && \
+		git clean -xdf && \
+		git submodule update --init --recursive
+
+onnxrt_patch:
+	cd onnxruntime && \
+		git apply ../patches/onnxruntime/cfloat.patch

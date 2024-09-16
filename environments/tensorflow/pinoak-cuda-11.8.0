@@ -1,0 +1,19 @@
+module purge
+
+export PYTHON_VERSION=3.10
+export CUDA_VERSION=11.8.0
+
+module load cudatoolkit/$CUDA_VERSION libffi libsqlite3 bazelisk cray-python/$PYTHON_VERSION clang/17.0.2 cudnn/8.9.7.29 PrgEnv-gnu gcc/11.2.0
+
+export TF_PYTHON_VERSION=$PYTHON_VERSION
+export CLANG_COMPILER_PATH=$(which clang)
+export CC=$CLANG_COMPILER_PATH
+export CUDA_TOOLKIT_PATH=$CUDA_TOOLKIT_ROOT_DIR
+export TF_CUDA_PATHS=$CUDA_TOOLKIT_ROOT_DIR
+export TF_CUDA_COMPUTE_CAPABILITIES="5.0,5.2,5.3,6.0,6.1,6.2,7.0,7.2,7.5,8.0,8.6,8.7,8.9,9.0"
+export GCC_HOST_COMPILER_PATH=$(which gcc)
+export TMP=/tmp/$USER
+
+#Set the bazel cache directory
+export TEST_TMPDIR=/tmp/$USER/bazel
+

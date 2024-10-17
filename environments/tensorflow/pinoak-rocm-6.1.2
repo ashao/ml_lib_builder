@@ -1,0 +1,18 @@
+module purge
+
+export PYTHON_VERSION=3.11
+export ROCM_VERSION=6.1.2
+
+module load rocm/$ROCM_VERSION libffi libsqlite3 bazelisk cray-python/$PYTHON_VERSION clang/17.0.2 patchelf
+
+export TF_PYTHON_VERSION=$PYTHON_VERSION
+# Following come from hipconfig, not all variables set by ROCm module
+export ROCM_PATH=/global/opt/rocm-$ROCM_VERSION
+export ROCM_TOOLKIT_PATH=$ROCM_PATH
+
+#Set the bazel cache directory
+export TEST_TMPDIR=/tmp/$USER/bazel
+
+# Setup rocm_agent_enumerator to setup multiple target architectures
+export TF_ROCM_AMDGPU_TARGETS="gfx90a,gfx940,gfx941,gfx942"
+

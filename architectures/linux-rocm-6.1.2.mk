@@ -39,7 +39,7 @@ PYTORCH_PREBUILD_TARGETS = pytorch_rocm_checkout pytorch_rocm_prebuild
 
 
 # Tensorflow options
-TF_VERSION = 2.15
+TF_VERSION = 2.16
 TF_TAG = r$(TF_VERSION)-rocm-enhanced
 TF_REMOTE = https://github.com/ROCm/tensorflow-upstream.git
 TF_PREBUILD_TARGETS = tf_rocm_checkout tf_rocm_prebuild
@@ -74,7 +74,8 @@ tf_rocm_prebuild:
 	cd tensorflow; \
 		USE_DEFAULT_PYTHON_LIB_PATH=1 \
 		PYTHON_BIN_PATH=$$(which python) \
-		TF_NEED_CLANG=0 \
+		CLANG_COMPILER_PATH=$$(which clang) \
+		TF_NEED_CLANG=1 \
 		TF_NEED_ROCM=1 \
 		TF_NEED_CUDA=0 \
 		CC_OPT_FLAGS="-Wno-sign-compare -B/usr/bin" \

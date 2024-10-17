@@ -111,6 +111,9 @@ $(TF_INSTALL_DIR):
 $(TF_ARCHIVE): $(TF_PREBUILD_TARGETS) $(TF_INSTALL_DIR)
 	cd tensorflow && \
 		bazel build $(TF_BAZEL_OPTS) //tensorflow/tools/lib_package:libtensorflow
+	cd tensorflow && \
+		bazel build --config=opt //tensorflow/tools/pip_package:build_pip_package --verbose_failures && \
+		bazel-bin/tensorflow/tools/pip_package/build_pip_package $(TF_INSTALL_DIR) --rocm
 	cp tensorflow/bazel-bin/tensorflow/tools/lib_package/libtensorflow.tar.gz $(TF_INSTALL_DIR)
 	cd $(TF_INSTALL_DIR) && tar -xzf libtensorflow.tar.gz && rm -f libtensorflow.tar.gz
 	cd $(INSTALL_DIR) && tar -czf $@ libtensorflow
